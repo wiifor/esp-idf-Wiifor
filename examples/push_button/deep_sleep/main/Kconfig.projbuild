@@ -1,0 +1,44 @@
+menu "Example Configuration"
+
+    config ENABLE_TOUCH_WAKEUP
+        bool "Enable touch wake up"
+        default y
+        help
+            This option enables wake up from deep sleep using touch pads
+            TOUCH8 and TOUCH9, which correspond to GPIO33 and GPIO32.
+
+    config ENABLE_ULP_TEMPERATURE_WAKEUP
+        bool "Enable temperature monitoring by ULP"
+        default y
+        help
+            This option enables wake up from deep sleep using ULP.
+            ULP program monitors the on-chip temperature sensor and
+            wakes up the chip when the temperature goes outside of
+            the window defined by the initial temperature and a threshold
+            around it.
+
+    config WIFI_SSID
+    string "WiFi SSID"
+    default "Wifi Wiifor"
+    help
+        SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "Wifi-Wiifor!"
+    help
+        WiFi password (WPA or WPA2) for the example to use.
+
+config BROKER_URL
+    string "Broker URL"
+    default "mqtt://iot.wiifor.com"
+    help
+        URL of the broker to connect to
+
+config BROKER_URL_FROM_STDIN
+	bool
+	default y if BROKER_URL = "FROM_STDIN"	
+
+endmenu
+
+
