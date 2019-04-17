@@ -34,12 +34,7 @@ RUN pip install wheel \
     && rm /tmp/requirements.txt \
     && rm -r ~/.cache/pip
 
-# Setup IDF_PATH
-ENV IDF_PATH $ESP_TCHAIN_BASEDIR/esp-idf
 # Add the toolchain binaries to PATH
 ENV PATH $ESP_TCHAIN_BASEDIR/xtensa-esp32-elf/bin:$PATH
-# Add PWD environment variable to prevent warnings
-ENV PWD /data
 
-WORKDIR $PWD
 ENTRYPOINT ["/usr/bin/make"]
