@@ -15,6 +15,14 @@ RUN apt-get -q update \
     python \
     python-pip \
     python-setuptools \
+    python-serial \
+    python-cryptography \
+    python-future \
+    python-pyparsing \
+    python-pyelftools \
+    python3 \
+    python3-pip \
+    python3-setuptools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -29,12 +37,14 @@ RUN mkdir -p $ESP_TCHAIN_BASEDIR \
 
 # Install required packages
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install wheel \
+RUN pip3 install pipenv \
+    && pip install wheel \
     && pip install -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt \
     && rm -r ~/.cache/pip
 
 # Add the toolchain binaries to PATH
-ENV PATH $ESP_TCHAIN_BASEDIR/xtensa-esp32-elf/bin:$PATH
+ENV PATH $PATH:$ESP_TCHAIN_BASEDIR/xtensa-esp32-elf/bin
+ENV NEXUS_ESP32_BUILD true
 
 ENTRYPOINT ["/usr/bin/make"]
