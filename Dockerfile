@@ -13,6 +13,7 @@ RUN apt-get -q update \
        python-serial python-cryptography python-future python-pyparsing python-pyelftools \
        python3 python3-pip python3-setuptools \
        libusb-1.0-0-dev libusb-dev libncurses5 libpython2.7 \
+       fuse libfuse-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -38,6 +39,11 @@ COPY $JLINK_VER.deb /tmp/$JLINK_VER.deb
 RUN dpkg -i /tmp/$JLINK_VER.deb \
     && rm /tmp/$JLINK_VER.deb
 
+# Setup littlefs-fuse tool
+ENV LITTLEFS_FUSE_BASEDIR /opt/littlefs-fuse
+COPY littlefs-fuse $LITTLEFS_FUSE_BASEDIR
+RUN cd $LITTLEFS_FUSE_BASEDIR && make
+
 # Add the toolchain binaries to PATH
 ENV PATH $PATH:$ESP_TCHAIN_BASEDIR/xtensa-esp32-elf/bin
 
@@ -52,5 +58,12 @@ VOLUME $ESP_TCHAIN_BASEDIR
 RUN cd /tmp && mkdir -p esp32 && cd esp32 && cp -avr $ESP_TCHAIN_BASEDIR/* .
 ADD debug-entrypoint.sh /opt/dedale
 RUN chmod +x /opt/dedale/debug-entrypoint.sh
+
+# Install the dedale CLI package
+ENV DEDALE_CLI_PATH /opt/dedale
+COPY "dedale*" $DEDALE_CLI_PATH
+RUN cd $DEDALE_CLI_PATH \
+    && python3 -m pip install dedale \
+    && python3 setup.py install
 
 ENTRYPOINT ["/usr/bin/make"]
