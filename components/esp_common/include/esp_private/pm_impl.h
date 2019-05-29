@@ -31,6 +31,7 @@
  * This is an enum of possible power modes supported by the implementation
  */
 typedef enum {
+    PM_MODE_DEEP_SLEEP, //!< Deep sleep
     PM_MODE_LIGHT_SLEEP,//!< Light sleep
     PM_MODE_APB_MIN,    //!< Idle (no CPU frequency or APB frequency locks)
     PM_MODE_APB_MAX,    //!< Maximum APB frequency mode
