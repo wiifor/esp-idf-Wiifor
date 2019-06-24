@@ -61,9 +61,8 @@ RUN chmod +x /opt/dedale/debug-entrypoint.sh
 
 # Install the dedale CLI package
 ENV DEDALE_CLI_PATH /opt/dedale
-COPY "dedale*" $DEDALE_CLI_PATH
+COPY "dedale*whl" $DEDALE_CLI_PATH
 RUN cd $DEDALE_CLI_PATH \
-    && python3 -m pip install dedale \
-    && python3 setup.py install
+    && pip3 install dedale*whl
 
 ENTRYPOINT ["/usr/bin/make"]
