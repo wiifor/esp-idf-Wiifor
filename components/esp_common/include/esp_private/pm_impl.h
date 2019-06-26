@@ -110,6 +110,16 @@ void esp_pm_impl_dump_stats(FILE* out);
  */
 void esp_pm_impl_waiti();
 
+/**
+ * @brief Hook function implementing user instruction before going into sleep mode
+ */
+bool enter_hook_function();
+
+/**
+ * @brief Hook function implementing user instruction when exiting sleep mode
+ */
+void exit_hook_function();
+
 #ifdef CONFIG_PM_PROFILING
 #define WITH_PROFILING
 #endif

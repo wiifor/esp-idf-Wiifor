@@ -541,53 +541,64 @@ static inline void IRAM_ATTR other_core_should_skip_light_sleep(int core_id)
 #endif
 }
 
+bool __attribute__((weak)) enter_hook_function(){
+    return true;
+}
+
+void __attribute__((weak)) exit_hook_function(){
+    NULL;
+}
+
 void IRAM_ATTR vApplicationSleep( TickType_t xExpectedIdleTime )
 {
     portENTER_CRITICAL(&s_switch_lock);
     int core_id = xPortGetCoreID();
     if (!should_skip_sleep(core_id)) {
-        /* Calculate how much we can sleep */
-        int64_t next_esp_timer_alarm = esp_timer_get_next_alarm();
-        int64_t now = esp_timer_get_time();
-        int64_t time_until_next_alarm = next_esp_timer_alarm - now;
-        int64_t wakeup_delay_us = portTICK_PERIOD_MS * 1000LL * xExpectedIdleTime;
-        int64_t sleep_time_us = MIN(wakeup_delay_us, time_until_next_alarm);
-        if (s_deep_sleep_en && s_deep_sleep_ok && (sleep_time_us >= DEEP_SLEEP_TRESHOLD_US)){
-            esp_sleep_enable_timer_wakeup(sleep_time_us - DEEP_SLEEP_EARLY_WAKEUP_US);
-            esp_deep_sleep_start();
-            }
-        else if (s_light_sleep_en){
-            if (sleep_time_us >= configEXPECTED_IDLE_TIME_BEFORE_SLEEP * portTICK_PERIOD_MS * 1000LL) {
-                esp_sleep_enable_timer_wakeup(sleep_time_us - LIGHT_SLEEP_EARLY_WAKEUP_US);
-
-#ifdef CONFIG_PM_TRACE
-                 /* to force tracing GPIOs to keep state */
-                esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-#endif
-                /* Enter sleep */
-                ESP_PM_TRACE_ENTER(SLEEP, core_id);
-                int64_t sleep_start = esp_timer_get_time();
-                esp_light_sleep_start();
-                int64_t slept_us = esp_timer_get_time() - sleep_start;
-                ESP_PM_TRACE_EXIT(SLEEP, core_id);
-
-                uint32_t slept_ticks = slept_us / (portTICK_PERIOD_MS * 1000LL);
-                if (slept_ticks > 0) {
-                    /* Adjust RTOS tick count based on the amount of time spent in sleep */
-                    vTaskStepTick(slept_ticks);
-
-                    /* Trigger tick interrupt, since sleep time was longer
-                    * than portTICK_PERIOD_MS. Note that setting INTSET does not
-                    * work for timer interrupt, and changing CCOMPARE would clear
-                    * the interrupt flag.
-                    */
-                    XTHAL_SET_CCOUNT(XTHAL_GET_CCOMPARE(XT_TIMER_INDEX) - 16);
-                    while (!(XTHAL_GET_INTERRUPT() & BIT(XT_TIMER_INTNUM))) {
-                        ;
-                    }
+        if(enter_hook_function()){
+            /* Calculate how much we can sleep */
+            int64_t next_esp_timer_alarm = esp_timer_get_next_alarm();
+            int64_t now = esp_timer_get_time();
+            int64_t time_until_next_alarm = next_esp_timer_alarm - now;
+            int64_t wakeup_delay_us = portTICK_PERIOD_MS * 1000LL * xExpectedIdleTime;
+            int64_t sleep_time_us = MIN(wakeup_delay_us, time_until_next_alarm);
+            if (s_deep_sleep_en && s_deep_sleep_ok && (sleep_time_us >= DEEP_SLEEP_TRESHOLD_US)){
+                esp_sleep_enable_timer_wakeup(sleep_time_us - DEEP_SLEEP_EARLY_WAKEUP_US);
+                esp_deep_sleep_start();
                 }
-                other_core_should_skip_light_sleep(core_id);
+            else if (s_light_sleep_en){
+                if (sleep_time_us >= configEXPECTED_IDLE_TIME_BEFORE_SLEEP* portTICK_PERIOD_MS * 1000LL) {
+                    esp_sleep_enable_timer_wakeup(sleep_time_us - LIGHT_SLEEP_EARLY_WAKEUP_US);
+
+    #ifdef CONFIG_PM_TRACE
+                    /* to force tracing GPIOs to keep state */
+                    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    #endif
+                    /* Enter sleep */
+                    ESP_PM_TRACE_ENTER(SLEEP, core_id);
+                    int64_t sleep_start = esp_timer_get_time();
+                    esp_light_sleep_start();
+                    int64_t slept_us = esp_timer_get_time() - sleep_start;
+                    ESP_PM_TRACE_EXIT(SLEEP, core_id);
+
+                    uint32_t slept_ticks = slept_us / (portTICK_PERIOD_MS * 1000LL);
+                    if (slept_ticks > 0) {
+                        /* Adjust RTOS tick count based on the amount of time spent in sleep */
+                        vTaskStepTick(slept_ticks);
+
+                        /* Trigger tick interrupt, since sleep time was longer
+                        * than portTICK_PERIOD_MS. Note that setting INTSET does not
+                        * work for timer interrupt, and changing CCOMPARE would clear
+                        * the interrupt flag.
+                        */
+                        XTHAL_SET_CCOUNT(XTHAL_GET_CCOMPARE(XT_TIMER_INDEX) - 16);
+                        while (!(XTHAL_GET_INTERRUPT() & BIT(XT_TIMER_INTNUM))) {
+                            ;
+                        }
+                    }
+                    other_core_should_skip_light_sleep(core_id);
+                }
             }
+        exit_hook_function();
         }
     }
     portEXIT_CRITICAL(&s_switch_lock);
